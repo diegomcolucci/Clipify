@@ -24,6 +24,10 @@ wheels/
 venv/
 env/
 ENV/
+Scripts/
+Lib/
+share/
+pyvenv.cfg
 
 # Environment files (don't commit secrets)
 .env
