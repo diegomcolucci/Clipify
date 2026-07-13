@@ -6,6 +6,15 @@ def validate_color(color: str) -> str:
     """Validate and convert color to ASS format."""
     if not color or not isinstance(color, str):
         return "&H00FFFFFF"  # Default white
+
+    c = color.strip().upper()
+    # Already in ASS format (&H00BBGGRR) -> keep it.
+    if c.startswith("&H") and len(c) == 10:
+        try:
+            int(c[2:], 16)
+            return c
+        except ValueError:
+            return "&H00FFFFFF"
         
     # Strip # if present
     color = color.lstrip("#")
@@ -28,13 +37,13 @@ def validate_style_value(key: str, value: Any) -> str:
         try:
             val = int(value)
             if key == "FontSize":
-                return str(max(1, min(val, 100)))
+                return str(max(1, min(val, 300)))
             elif key == "Outline":
-                return str(max(0, min(val, 4)))
+                return str(max(0, min(val, 20)))
             elif key == "Shadow":
                 return str(max(0, min(val, 4)))
             elif key == "MarginV":
-                return str(max(0, min(val, 100)))
+                return str(max(0, min(val, 2000)))
         except (ValueError, TypeError):
             return "40" if key == "FontSize" else "2"
             
@@ -71,7 +80,7 @@ def validate_subtitle_style(style: Dict[str, Any]) -> Dict[str, str]:
     # Process each style attribute
     for key, value in style.items():
         if key in [
-            "FontSize", "PrimaryColour", "OutlineColour", "BackColour",
+            "FontName", "FontSize", "PrimaryColour", "OutlineColour", "BackColour",
             "Outline", "BorderStyle", "Shadow", "Alignment", "MarginV"
         ]:
             validated[key] = validate_style_value(key, value)

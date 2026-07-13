@@ -9,19 +9,27 @@ Referência rápida para rodar o projeto Clipify (UI Gradio) em qualquer máquin
 - Python 3.11
 - `git`
 - `ffmpeg`
-- ImageMagick (`magick`)
-- Chave de API do Google Gemini ou OpenAI
+- Chave de API (Google Gemini, OpenAI ou OpenRouter)
 
-### Instalar ffmpeg (macOS)
+### Instalar ffmpeg
+
+**macOS:**
 ```bash
 brew install ffmpeg
 ```
 
-### Instalar ImageMagick (macOS via Miniforge)
+**Windows:**
+```powershell
+# Via Chocolatey
+choco install ffmpeg
+
+# Ou via winget
+winget install FFmpeg.Foundation.FFmpeg
+```
+
+**Linux (Ubuntu/Debian):**
 ```bash
-curl -L -o miniforge.sh https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-arm64.sh
-bash miniforge.sh -b -p $HOME/miniforge3
-$HOME/miniforge3/bin/conda install -y -c conda-forge imagemagick
+sudo apt install ffmpeg
 ```
 
 ---
@@ -36,33 +44,64 @@ cd Clipify
 ```
 
 ### 2. Criar ambiente virtual e instalar dependências
+
+**macOS/Linux:**
 ```bash
 python3.11 -m venv venv
-./venv/bin/pip install --upgrade pip
-./venv/bin/pip install -r requirements.txt
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
 ### 3. Configurar chaves de API
 ```bash
 cp .env.example .env
 ```
+
 Edite o arquivo `.env` e adicione sua chave:
-```bash
+
+```env
+# Google Gemini (recomendado - gratuito)
 GOOGLE_API_KEY=sua_chave_aqui
+AI_PROVIDER=gemini
+
+# OU OpenAI
+OPENAI_API_KEY=sua_chave_aqui
+AI_PROVIDER=openai
+
+# OU OpenRouter (múltiplos modelos, incluindo gratuitos)
+OPENROUTER_API_KEY=sua_chave_aqui
+OPENROUTER_MODEL=auto
+AI_PROVIDER=openrouter
 ```
 
-Ou para OpenAI:
-```bash
-OPENAI_API_KEY=sua_chave_aqui
-```
+**Obter chaves:**
+- Google AI Studio: https://aistudio.google.com/app/apikey
+- OpenAI: https://platform.openai.com/api-keys
+- OpenRouter: https://openrouter.ai/settings/keys
 
 ---
 
 ## ▶️ Rodar a UI
 
+**macOS/Linux:**
 ```bash
-cd /Users/diegomcolucci/Projects/Clipify
-./scripts/run_gradio.sh
+source venv/bin/activate
+python ui/app_gradio.py
+```
+
+**Windows (PowerShell):**
+```powershell
+.\venv\Scripts\Activate.ps1
+python ui/app_gradio.py
 ```
 
 Acesse no navegador:
@@ -76,16 +115,16 @@ http://127.0.0.1:7860
 
 ### Verificação rápida de sintaxe
 ```bash
-./venv/bin/python -m py_compile ui/app_gradio.py clipify/pipelines/ui_helpers.py clipify/video/processor.py clipify/pipelines/gemini_pipeline.py
+python -m py_compile ui/app_gradio.py clipify/pipelines/ui_helpers.py clipify/video/processor.py clipify/pipelines/gemini_pipeline.py
 ```
 
 ### Rodar testes unitários
 ```bash
-./venv/bin/python -m pytest tests/test_providers.py -v
+python -m pytest tests/test_providers.py -v
 ```
 
 ### Teste completo
-1. Rode `./scripts/run_gradio.sh`
+1. Rode o app com `python ui/app_gradio.py`
 2. Faça upload de um vídeo curto
 3. Clique em **Auto-suggest params** (opcional)
 4. Clique em **Generate**
@@ -108,18 +147,24 @@ git pull origin develop
 
 ### Reinstalar dependências
 ```bash
-./venv/bin/pip install -r requirements.txt --force-reinstall
+pip install -r requirements.txt --force-reinstall
 ```
 
 ---
 
 ## ⚠️ Problemas comuns
 
-### `magick` não encontrado
-O script `run_gradio.sh` tenta adicionar `$HOME/miniforge3/bin` ao PATH automaticamente. Se ainda falhar:
+### Porta 7860 já está em uso
 ```bash
-export PATH="$HOME/miniforge3/bin:$PATH"
-./scripts/run_gradio.sh
+# Encontrar o processo
+netstat -ano | Select-String ":7860"
+
+# Encerrar (substitua 12345 pelo PID)
+# Windows:
+taskkill /F /PID 12345
+
+# macOS/Linux:
+kill -9 12345
 ```
 
 ### Erro de API key
@@ -139,4 +184,4 @@ O Whisper baixa o modelo `base` na primeira execução. Isso é normal.
 - `clipify/pipelines/gemini_pipeline.py` — highlights e alinhamento
 - `clipify/pipelines/ui_helpers.py` — ffmpeg + transcrição Whisper
 - `clipify/video/processor.py` — queima de legendas
-- `scripts/run_gradio.sh` — launcher
+- `.env` — suas chaves de API (NÃO commitar)

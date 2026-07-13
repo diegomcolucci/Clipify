@@ -84,7 +84,7 @@ def ffmpeg_cut(input_video: Path, start: float, end: float, out_path: Path):
 
 from .ass_style import validate_subtitle_style, ass_force_style
 
-def ffmpeg_burn_subs(raw_clip: Path, srt: Path, out_path: Path, aspect: str = "source", style: Dict[str,Any] = None):
+def ffmpeg_burn_subs(raw_clip: Path, srt: Path, out_path: Path, aspect: str = "source", style: Dict[str,Any] = None, fonts_dir: Path = None):
     from .srt_validator import validate_srt_timings
     import subprocess
     
@@ -99,6 +99,17 @@ def ffmpeg_burn_subs(raw_clip: Path, srt: Path, out_path: Path, aspect: str = "s
         validate_srt_timings(srt, duration)
     except (subprocess.CalledProcessError, ValueError):
         print(f"Warning: Could not validate SRT timings for {srt}")
+
+    # Get video height for ASS font size scaling
+    height_cmd = [
+        "ffprobe", "-v", "error", "-select_streams", "v:0",
+        "-show_entries", "stream=height",
+        "-of", "csv=s=x:p=0", str(raw_clip)
+    ]
+    try:
+        video_height = int(subprocess.check_output(height_cmd, stderr=subprocess.DEVNULL).decode().strip())
+    except Exception:
+        video_height = 768
     
     vf = []
     if aspect in ("9:16","4:5","1:1"):
@@ -106,10 +117,25 @@ def ffmpeg_burn_subs(raw_clip: Path, srt: Path, out_path: Path, aspect: str = "s
         W,H = targets[aspect]
         vf.append(f"scale=w={W}:h={H}:force_original_aspect_ratio=decrease")
         vf.append(f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2")
+        video_height = H
     
     # Validate and apply subtitle style settings
-    validated_style = validate_subtitle_style(style or {})
-    sub = f"subtitles='{srt.as_posix()}':"
+    style_in = dict(style or {})
+    # Remove internal helper keys that are not ASS style properties.
+    style_in.pop("FontPath", None)
+    validated_style = validate_subtitle_style(style_in)
+    
+    # Keep FontSize from UI/style builder as-is.
+    # In this project, UI values are tuned to match perceived on-screen size.
+    
+    srt_escaped = srt.as_posix().replace(":", "\\:")
+    sub = f"subtitles='{srt_escaped}':"
+    if fonts_dir:
+        try:
+            fd = Path(fonts_dir).as_posix().replace(":", "\\:")
+            sub += f"fontsdir='{fd}':"
+        except Exception:
+            pass
     sub += f"force_style='{ass_force_style(validated_style)}'"
     vf.append(sub)
     cmd = [

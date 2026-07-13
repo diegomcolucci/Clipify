@@ -1,6 +1,6 @@
 import pytest
 
-from clipify.pipelines.gemini_pipeline import call_gemini
+from clipify.pipelines.llm_pipeline import call_gemini
 
 class DummyProvider:
     def __init__(self, resp):

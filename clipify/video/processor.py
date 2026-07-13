@@ -93,9 +93,15 @@ class VideoProcessor:
             # Pre-check captioning dependencies and provide clearer errors if missing
             def _check_caption_deps() -> List[str]:
                 missing = []
-                # ImageMagick: either 'convert' (legacy) or 'magick'
-                if not (shutil.which('convert') or shutil.which('magick')):
-                    missing.append('ImageMagick (convert or magick)')
+                # ImageMagick: check moviepy config first, then PATH
+                try:
+                    from moviepy.config import get_setting
+                    im_bin = get_setting('IMAGEMAGICK_BINARY')
+                    if im_bin == 'unset' or not os.path.isfile(im_bin):
+                        missing.append('ImageMagick (magick or convert)')
+                except Exception:
+                    if not (shutil.which('convert') or shutil.which('magick')):
+                        missing.append('ImageMagick (magick or convert)')
                 # ffmpeg is also required
                 if not shutil.which('ffmpeg'):
                     missing.append('ffmpeg')
